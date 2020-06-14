@@ -45,7 +45,7 @@ export class BooksService {
   }
 
   async createBook(createBookDto: CreateBookDto): Promise<Book> {
-    const book = await this.setEntity(createBookDto, Book);
+    const book = await this.setEntity<Book>(createBookDto, Book);
     try {
       return await this.bookRepository.save(book);
     } catch (error) {
@@ -71,32 +71,35 @@ export class BooksService {
   async updateBook(id: number, updateBookDto: UpdateBookDto): Promise<Book> {
     await this.getBookById(id);
     try {
-      const book = await this.setEntity(updateBookDto, Book);
+      const book = await this.setEntity<Book>(updateBookDto, Book);
       return await this.bookRepository.save({ ...book, id });
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
 
-  private async setEntity(dto: any, Entity: any): Promise<any> {
-    const entity = new Entity();
+  private async setEntity<T extends object>(
+    dto: any,
+    et: new () => T,
+  ): Promise<T> {
+    const entity = new et();
     for (const prop in dto) {
       entity[prop] = dto[prop];
     }
     try {
-      if (entity.publisher) {
-        entity.publisher = await this.publisherRepository.findOneOrFail(
+      if ('publisher' in entity) {
+        (entity as Book).publisher = await this.publisherRepository.findOneOrFail(
           dto.publisher,
         );
       }
-      if (entity.authors) {
-        entity.authors = await this.mapToEntities(
+      if ('authors' in entity) {
+        (entity as Book).authors = await this.mapToEntities<Author>(
           dto.authors,
           this.authorRepository,
         );
       }
-      if (entity.genres) {
-        entity.genres = await this.mapToEntities(
+      if ('genres' in entity) {
+        (entity as Book).genres = await this.mapToEntities<Genre>(
           dto.genres,
           this.genreRepository,
         );
@@ -107,10 +110,10 @@ export class BooksService {
     }
   }
 
-  private async mapToEntities(
+  private async mapToEntities<T>(
     listIds: number[],
-    repository: Repository<any>,
-  ): Promise<Array<any>> {
+    repository: Repository<T>,
+  ): Promise<Array<T>> {
     return Promise.all(
       listIds.map(async id => {
         try {

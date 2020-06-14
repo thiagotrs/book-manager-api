@@ -80,7 +80,7 @@ export class BooklistsService {
         booklist.name = updateBooklistDto.name;
       }
       if (updateBooklistDto.books) {
-        booklist.books = await this.mapToEntities(
+        booklist.books = await this.mapToEntities<Book>(
           updateBooklistDto.books,
           this.bookRepository,
         );
@@ -91,10 +91,10 @@ export class BooklistsService {
     }
   }
 
-  private async mapToEntities(
+  private async mapToEntities<T>(
     listIds: number[],
-    repository: Repository<any>,
-  ): Promise<Array<any>> {
+    repository: Repository<T>,
+  ): Promise<Array<T>> {
     return Promise.all(
       listIds.map(async id => {
         try {
